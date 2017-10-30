@@ -1,17 +1,13 @@
 package util;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileInputStream;
-import java.io.FileWriter;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.swing.JButton;
 import javax.swing.JFileChooser;
-import javax.swing.JFrame;
 
 import jxl.Sheet;
 import jxl.Workbook;
@@ -20,21 +16,44 @@ import model.Index;
 public class ImportDataSource {
 
 	public static void main(String[] args) {
-		JFileChooser jf = new JFileChooser();
-		jf.setFileSelectionMode(JFileChooser.SAVE_DIALOG
-				| JFileChooser.DIRECTORIES_ONLY);
-		jf.showDialog(null, null);
-		File fi = jf.getSelectedFile();
-		String f = fi.getAbsolutePath() + "\\test.txt";
-		System.out.println("save: " + f);
-		try {
-			FileWriter out = new FileWriter(f);
-			out.write("successful!!!");
-			out.close();
-		} catch (Exception ee) {
+	}
+
+	private String getDataSourcePath() {
+		// 创建文件选择器
+		JFileChooser fileChooser = new JFileChooser();
+		// 设置当前目录
+		// fileChooser.setCurrentDirectory(new File("."));
+		fileChooser.setAcceptAllFileFilterUsed(false);
+		final String[][] fileENames = {
+		// { ".java", "JAVA源程序 文件(*.java)" },
+		// { ".doc", "MS-Word 2003 文件(*.doc)" },
+		{ ".xls", "MS-Excel 2003 文件(*.xls)" } };
+		// 循环添加需要显示的文件
+		for (final String[] fileEName : fileENames) {
+			fileChooser.setFileFilter(new javax.swing.filechooser.FileFilter() {
+				public boolean accept(File file) {
+					if (file.getName().endsWith(fileEName[0])
+							|| file.isDirectory()) {
+						return true;
+					}
+					return false;
+				}
+
+				public String getDescription() {
+					return fileEName[1];
+				}
+			});
 		}
-		jf.setSize(500, 100);
-		jf.setVisible(true);
+		fileChooser.showDialog(null, null);
+		try {
+			File file = fileChooser.getSelectedFile();
+			String path = file.getAbsolutePath();
+			// System.out.println(path);
+			return path.replace("\\", "/");
+			// System.out.println(path.replace("\\", "/"));
+		} catch (NullPointerException e) {
+		}
+		return null;
 	}
 
 	/**
@@ -42,15 +61,16 @@ public class ImportDataSource {
 	 * 
 	 * @return
 	 */
-	public List<Index> importExcel() {
-
+	public List<Index> importDataSource() {
+		String filePath = getDataSourcePath();
+		if (filePath == null) {
+			return null;
+		}
 		Sheet sheet;
 		Workbook book;
-
 		List<Index> list = new ArrayList<Index>();
 		try {
-			InputStream is = new FileInputStream(
-					"C:/Users/admin/Desktop/importdata.xls");
+			InputStream is = new FileInputStream(filePath);
 			book = Workbook.getWorkbook(is);
 			// 获得第一个工作表对象(ecxel中sheet的编号从0开始,0,1,2,3,....)
 			sheet = book.getSheet(0);
