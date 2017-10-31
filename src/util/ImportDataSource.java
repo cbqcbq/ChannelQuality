@@ -18,6 +18,11 @@ public class ImportDataSource {
 	public static void main(String[] args) {
 	}
 
+	/**
+	 * 获取训练数据源的位置
+	 * 
+	 * @return 返回数据源的路径
+	 */
 	private String getDataSourcePath() {
 		// 创建文件选择器
 		JFileChooser fileChooser = new JFileChooser();
@@ -52,6 +57,7 @@ public class ImportDataSource {
 			return path.replace("\\", "/");
 			// System.out.println(path.replace("\\", "/"));
 		} catch (NullPointerException e) {
+			System.out.println("You selected nothing!");
 		}
 		return null;
 	}
@@ -59,7 +65,7 @@ public class ImportDataSource {
 	/**
 	 * 导入训练数据源
 	 * 
-	 * @return
+	 * @return 返回训练数据源
 	 */
 	public List<Index> importDataSource() {
 		String filePath = getDataSourcePath();
@@ -89,40 +95,8 @@ public class ImportDataSource {
 			}
 			book.close();
 		} catch (Exception e) {
-			System.out.println("there is something wrong with import excel!");
+			System.out.println("There is something wrong with import excel!");
 		}
 		return list;
 	}
 }
-// 仿真系统：输出通道质量查询界面表格的数据
-// Sheet sheet;
-// Workbook book;
-// double[][] data = new double[30][38];
-// int count = 0;
-// try {
-// InputStream is = new FileInputStream(
-// "C:/Users/admin/Desktop/test.xls");
-// book = Workbook.getWorkbook(is);
-// // 获得第一个工作表对象(ecxel中sheet的编号从0开始,0,1,2,3,....)
-// sheet = book.getSheet(0);
-// for (int i = 0; i < sheet.getRows(); i++) {
-// // 获取每一行的单元格
-// for (int j = 0; j < 38; j++) {
-// data[count][j] = Double.parseDouble(sheet.getCell(j, i)
-// .getContents());
-// }
-// count++;
-// }
-// book.close();
-// } catch (Exception e) {
-// System.out.println("there is something wrong with import excel!");
-// }
-// for (int i = 1; i <= count; i++) {
-// StringBuilder sb = new StringBuilder();
-// sb.append("{no:\"" + i + "\",zb1:" + data[i - 1][0]);
-// for (int j = 2; j <= 38; j++) {
-// sb.append(",zb" + j + ":" + data[i - 1][j - 1]);
-// }
-// sb.append("},");
-// System.out.println(sb);
-// }
