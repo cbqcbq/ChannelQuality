@@ -4,16 +4,15 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 
 public class SA_BPNeuralNetworkAlgorithm {
 
 	public static void main(String[] args) {
-		// TODO Auto-generated method stub
-
 	}
 
-	// Boltzmann常数为1.3806505(24) × 10-23 J/K，太小了忽略不计
-	private static final double K = 0.0;
+	// Boltzmann常数为1.3806505(24) × 10-23 J/K，太小了达不到要求
+	private static final double K = 0.0000000000000001;
 	// 连续不接受新值的次数达到此值，即达到平衡状态
 	private static final int isBalance = 5;
 	// 输入层节点数
@@ -41,19 +40,32 @@ public class SA_BPNeuralNetworkAlgorithm {
 		weight1 = new double[M][N];
 		weight2 = new double[N][P];
 		int i, j;
-		DecimalFormat df = new DecimalFormat("#.00");
 		for (i = 0; i < M; i++) {
 			for (j = 0; j < N; j++) {
-				weight1[i][j] = Double.parseDouble(df.format(Math.random()));
-				weightT1 = weight1.clone();
+				weight1[i][j] = getRandWeight();
+				weightT1[i][j] = weight1[i][j];
 			}
 		}
 		for (i = 0; i < N; i++) {
 			for (j = 0; j < P; j++) {
-				weight2[i][j] = Double.parseDouble(df.format(Math.random()));
-				weightT2 = weight2.clone();
+				weight2[i][j] = getRandWeight();
+				weightT2[i][j] = weight2[i][j];
 			}
 		}
+	}
+
+	/**
+	 * 获得一个【-1,1】随机权重
+	 * 
+	 * @return
+	 */
+	private double getRandWeight() {
+		DecimalFormat df = new DecimalFormat("#.00");
+		Random random = new Random();
+		double res = Double.parseDouble(df.format(Math.random()
+				* (random.nextInt(2) == 0 ? -1 : 1)));
+		System.out.println("The random weight is " + res);
+		return res;
 	}
 
 	/**
@@ -118,7 +130,6 @@ public class SA_BPNeuralNetworkAlgorithm {
 	public void startTraining(double[][] sample, double[] expectOutput,
 			double threshold, double initTemp, double minTemp,
 			int maxdisturbCount) {
-		List<PicData> list = new ArrayList<PicData>();
 		// 误差函数
 		double deviation = Integer.MAX_VALUE;
 		// 误差函数temp
@@ -129,111 +140,91 @@ public class SA_BPNeuralNetworkAlgorithm {
 		int times = 0;
 		// 样本总数
 		int sampleCount = sample.length;
-		// 扰动次数
-		int Mcount = 0;
 		// 判断是否达到平衡状态依据，当连续不接受新值达到isBalance次数
 		int Bcount = 0;
 
 		int i, j, k, p;
 		double t;
 
-		all:for (k = 0; k < sampleCount; k++) {
+		all: for (k = 0; k < sampleCount; k++) {
 			// 迭代次数
 			int n = 1;
-			two:for (t = initTemp; t > minTemp; t = initTemp / (1 + n++)) {
+			for (t = initTemp; t > minTemp; t = initTemp / (1 + n++)) {
 				deviation = getDeviation(sample, k, expectOutput);
 				if (deviation < threshold) {
 					break all;
 				}
+				Bcount = 0;
 				for (p = 0; p < maxdisturbCount; p++) {
 					getNewWeight();
 					deviationTemp = getDeviation(sample, k, expectOutput);
 					di = deviationTemp - deviation;
-					if (di < 0||acceptNew(di,t)) {
-						Bcount=0;
-						deviation=deviationTemp;
+					if (di < 0 || acceptNew(di, t)) {
+						Bcount = 0;
+						deviation = deviationTemp;
+						weightT1 = weight1.clone();
+						weightT2 = weight2.clone();
 						if (deviation < threshold) {
 							break all;
 						}
-					}else{
+					} else {
 						Bcount++;
+						weight1 = weightT1.clone();
+						weight2 = weightT2.clone();
 					}
-					if(Bcount>=isBalance){
-						break two;
+					if (Bcount >= isBalance) {
+						break;
 					}
 				}
 			}
 		}
-		while (deviation > threshold && times < trainingTimes
-				&& index < sampleCount) {
-
-			double[] temp = new double[P];
-			for (i = 0; i < P; i++) {
-				temp[i] = diff[i] * outputLayerOutput[i]
-						* (1 - outputLayerOutput[i]);
-			}
-			for (i = 0; i < N; i++) {
-				for (j = 0; j < P; j++) {
-					wDiffTemp2[i][j] = (1 - f) * r * temp[j]
-							* hideLayerOutput[i] + f * wDiff2[i][j];
-					// wDiffTemp2[i][j] = r * temp[j] * hideLayerOutput[i] + f
-					// * wDiff2[i][j];
-					// System.out.println("improve:times:"+times+" wDiffTemp2["+i+"]["+j+"]="+wDiffTemp2[i][j]);
-				}
-			}
-			for (i = 0; i < M; i++) {
-				for (j = 0; j < N; j++) {
-					for (k = 0; k < P; k++) {
-						wDiffTemp1[i][j] = (1 - f) * r * sample[index][i]
-								* temp[k] * hideLayerOutput[j]
-								* (1 - hideLayerOutput[j]) * wDiffTemp2[j][k]
-								+ f * wDiff1[i][j];
-						// wDiffTemp1[i][j] = r * sample[index][i] * temp[k]
-						// * hideLayerOutput[j] * (1 - hideLayerOutput[j])
-						// * wDiffTemp2[j][k] + f * wDiff1[i][j];
-						// System.out.println("improve:times:"+times+" wDiffTemp1["+i+"]["+j+"]="+wDiffTemp1[i][j]);
-					}
-				}
-			}
-			wDiff2 = wDiffTemp2.clone();
-			wDiff1 = wDiffTemp1.clone();
-			if (deviation > 1.04 * deviationTemp) {
-				f = 0;
-				r = 0.7 * r;
-			} else if (deviation < deviationTemp) {
-				f = 0.4;
-				r = 1.05 * r;
-			}
-			deviationTemp = deviation;
-			for (i = 0; i < M; i++) {
-				for (j = 0; j < N; j++) {
-					weight1[i][j] -= wDiff1[i][j];
-				}
-			}
-			for (i = 0; i < N; i++) {
-				for (j = 0; j < P; j++) {
-					weight2[i][j] -= wDiff2[i][j];
-				}
-			}
-			times++;
-			index++;
-			PicData picData = new PicData();
-			picData.setDeviation(deviation);
-			picData.setTimes(times);
-			list.add(picData);
-		}
-		ExportExcel excel = new ExportExcel();
-		excel.exportExcel(list, "C:/Users/admin/Desktop/picdata.xls");
+		//此处应该有保存连接权值的操作
 	}
 
+	/**
+	 * 是否接受新值
+	 * 
+	 * @param di
+	 *            新旧误差函数之差
+	 * @param t
+	 *            当前温度
+	 * @return
+	 */
 	private boolean acceptNew(double di, double t) {
-		// TODO Auto-generated method stub
-		return false;
+		double r = Math.random();
+		double p = Math.exp(-di / (K * t));
+		if (p > r)
+			return true;
+		else
+			return false;
 	}
 
+	/**
+	 * 获得新的连接权值
+	 */
 	private void getNewWeight() {
-		// TODO Auto-generated method stub
+		int i, j;
+		for (i = 0; i < M; i++) {
+			for (j = 0; j < N; j++) {
+				double r = Math.random();
+				weight1[i][j] += r * sgn(r) * 2;// 2是因为连接权值的区间是【-1,1】
+			}
+		}
+		for (i = 0; i < N; i++) {
+			for (j = 0; j < P; j++) {
+				double r = Math.random();
+				weight2[i][j] += r * sgn(r) * 2;
+			}
+		}
+	}
 
+	private int sgn(double r) {
+		if (r > 0.5)
+			return 1;
+		else if (r < 0.5)
+			return -1;
+		else
+			return 0;
 	}
 
 }
